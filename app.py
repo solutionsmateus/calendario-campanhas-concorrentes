@@ -10,8 +10,13 @@ from selenium.webdriver.support import expected_conditions as EC
 
 #Initial Configuration to run in paralelal processesors
 
-#URLS
+#DIR - OF DOCUMENT .DOCX
 ENCARTE_DIR = "Desktop/Campanhas_get\Campanhas_doc.docx"
+#DIR - DOS ENCARTES - ASSAI PARA OCR
+ENCARTE_DIR_ENC_ASSAI = "Desktop/Encartes-Concorrentes/Assai"
+#DIR - DOS ENCARTES - GBARBOSA PARA OCR 
+ENCARTE_DIR_ENC_GBARBOSA = "Desktop/Encartes-Concorrentes/GBarbosa"
+
 
 BASE_URLS = {
     "Assaí": "https://www.assai.com.br/ofertas",
@@ -131,16 +136,20 @@ class Atacadão:
             
 class Assaí:
       driver.get(BASE_URLS["Atakarejo"])
-      
+      #FOR MAKE OCR OF IMAGE IN PATH["Desktop/Encartes-Concorrentes"] AND SAVE ON THE DOCUMENT.     
       def enc_camp():
-        #Encontrar data - Assaí
-        try:
             data_enc = driver.find_element(By.XPATH, 'div//[contains(@class, "ofertas-tab-validade"]')
             data_enc.split('\n')
-            data_enc.select()
-        except:
-            return "Nothing located"
-        
+            data_enc.select() 
+            try:
+                ENCARTE_DIR_ENC_ASSAI(len[0-7])
+                pdfs =[]
+                images = ENCARTE_DIR(pdfs)
+                for i, img in enumerate(len(images)):
+                    text = pytesseract.image_to_string(img)
+                    full_text += f"\n--- Page {i+1} ---\n{text}"
+            except:
+                print("Not Detected")
         
 
 #Class NovoAtacarejo
