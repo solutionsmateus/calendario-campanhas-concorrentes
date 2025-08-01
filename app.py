@@ -135,7 +135,8 @@ class Atacadão:
 #Class Assaí
             
 class Assaí:
-      driver.get(BASE_URLS["Atakarejo"])
+      driver.get(BASE_URLS["Assaí"])
+      
       #FOR MAKE OCR OF IMAGE IN PATH["Desktop/Encartes-Concorrentes"] AND SAVE ON THE DOCUMENT.     
       def enc_camp():
             data_enc = driver.find_element(By.XPATH, 'div//[contains(@class, "ofertas-tab-validade"]')
@@ -154,7 +155,7 @@ class Assaí:
 
 #Class NovoAtacarejo
 class NovoAtacarejo:
-    driver.get(BASE_URLS["Atakarejo"])
+    driver.get(BASE_URLS["Novo_Atacarejo"])
     
     def enc_camp():
         #Encontrar data - Novo Atacarejo
@@ -167,7 +168,7 @@ class NovoAtacarejo:
 
 #Class Cometa 
 class Cometa:
-    driver.get(BASE_URLS["Atakarejo"])
+    driver.get(BASE_URLS["Cometa_Supermecados"])
     
     def enc_camp():
         try:
@@ -189,13 +190,18 @@ class Cometa:
 #Class GBarbosa    
 class GBarbosa:
     driver.get(BASE_URLS["Gbarbosa"])
-    
+    #Make OCR PDF to Transform PDF to image (jpg)
     def enc_camp():
         try:
-            enc_camp = driver.find_element(By.XPATH, '')
+            pdfs = []
+            ENCARTE_DIR_ENC_GBARBOSA[len[0-7]]
+            images = ENCARTE_DIR[pdfs]
+            for i, img in enumerate(len(images)):   
+                text = pytesseract.image_to_string[img]
+                full_text += f'\n--- Page {i+1} ---\n{text}'
         except:
-            return "Nothing located"
-
+            return "Not possible to read images"
+    
 #Class Frangolandia   
 class Frangolandia:
     driver.get(BASE_URLS["Frangolandia"])
