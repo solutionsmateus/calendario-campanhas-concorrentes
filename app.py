@@ -78,14 +78,6 @@ LOJA_ESTADO = {
 for i in BASE_URLS:
      driver.get(i)
      driver.switch_to.new_window(driver.window_handles[0])
-     original_window = driver.current_window_handle
-     try:
-         for window_handle in driver.window_handles:
-             if window_handle != original_window:
-                 driver.switch_to.window(window_handle)
-     except:
-        print("Não foi possivel abrir outra janela")
-     
      
 #Open document Campanhas_doc.docx in computer
 driver_path_open = os.path.abspath('Desktop/Campanhas_get/Campanhas_doc.docx')
