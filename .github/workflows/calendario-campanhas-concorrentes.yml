@@ -1,75 +1,77 @@
-- name: calendario-campanhas-concorrentes
-  
+name: calendario-campanhas-concorrentes
+  
 on:
-  push:
-    branches: ["main"]
-  pull_request:
-    branches: ["main"]
-  workflow_dispatch:
-  schedule:
-    - cron: '0 12 * * *'  # todos os dias às 9:00 UTC
+  push:
+    branches: ["main"]
+  pull_request:
+    branches: ["main"]
+  workflow_dispatch:
+  schedule:
+    - cron: '0 12 * * *' # todos os dias às 9:00 UTC (12:00 UTC = 9:00 BRT)
 
 jobs:
-  build:
-    runs-on: windows-latest
-    permissions:
-      contents: write
-    env:
-      # Pasta única de saída; use este caminho nos scripts (via env OUTPUT_DIR)
-      OUTPUT_DIR: ${{ github.workspace }}/Encartes
-      HTTP_UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36
-    strategy:
-      matrix:
-        scripts:
-          - assai.py
-          - atacadao.py
-          - novoatacarejo.py
-          - frangolandia.py
-          - cometa.py
-          - atakarejo.py
-          - gbarbosa.py
+  build:
+    runs-on: windows-latest
+    permissions:
+      contents: write
+    env:
+      # Pasta única de saída; use este caminho nos scripts (via env OUTPUT_DIR)
+      OUTPUT_DIR: ${{ github.workspace }}/Encartes
+      HTTP_UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36
+      PYTHONUNBUFFERED: 1 # Adicionado para melhor visualização dos logs
+    strategy:
+      matrix:
+        scripts:
+          - assai.py
+          - atacadao.py
+          - novoatacarejo.py
+          - frangolandia.py
+          - cometa.py
+          - atakarejo.py
+          - gbarbosa.py
 
-     steps:
-      - name: Checkout (repo atual)
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-          fetch-tags: true
-          lfs: true
-          submodules: recursive
+    steps:
+      - name: Checkout (repo atual)
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          fetch-tags: true
+          lfs: true
+          submodules: recursive
 
-      - name: Ajustes Git no Windows (opcional)
-        shell: pwsh
-        run: |
-          git config --global user.name "user"
-          git config --global user.email "usermail10@gmail.com"
-          git config --global core.longpaths true
+      - name: Ajustes Git no Windows (opcional)
+        shell: pwsh
+        run: |
+          git config --global user.name "user"
+          git config --global user.email "usermail10@gmail.com"
+          git config --global core.longpaths true
 
-      - name: Setup Python 3.12 (com cache pip)
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.12"
-          cache: "pip"
-          cache-dependency-path: requirements.txt
+      - name: Setup Python 3.12 (com cache pip)
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: "pip"
+          cache-dependency-path: requirements.txt
 
-      - name: Instalar dependências
-        shell: pwsh
-        run: |
-          python -m pip install --upgrade pip
-          pip install -r requirements.txt
+      - name: Instalar dependências
+        shell: pwsh
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          # IMPORTANTE: Garanta que você tenha 'pandas' e 'openpyxl' no seu requirements.txt
+          # pip install pandas openpyxl selenium # Exemplo
 
-      - name: Executar scripts da matrix
-        shell: pwsh
-        working-directory: calendario-campanhas-concorrentes
-        run: |
-          echo "OUTPUT_DIR=$env:OUTPUT_DIR"
-          python "${{ matrix.scripts }}"
+      - name: Executar scripts da matrix
+        shell: pwsh
+        # ATENÇÃO: O caminho foi corrigido para 'codes/'
+        run: |
+          echo "OUTPUT_DIR=$env:OUTPUT_DIR"
+          python "codes/${{ matrix.scripts }}" # <--- CORRIGIDO
 
-      - name: Upload arquivos gerados
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: encartes-${{ github.run_id }}-${{ matrix.scripts }}-attempt${{ github.run_attempt }}
-          if-no-files-found: warn
-          path: ${{ env.OUTPUT_DIR }}/**
-        
+      - name: Upload arquivos gerados
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: encartes-${{ github.run_id }}-${{ matrix.scripts }}-attempt${{ github.run_attempt }}
+          if-no-files-found: warn
+          path: ${{ env.OUTPUT_DIR }}/**
