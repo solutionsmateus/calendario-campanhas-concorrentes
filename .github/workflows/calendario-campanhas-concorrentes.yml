@@ -1,5 +1,5 @@
-- name: calendarios-concorrentes-vm
-
+- name: calendario-campanhas-concorrentes
+  
 on:
   push:
     branches: ["main"]
