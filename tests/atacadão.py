@@ -119,31 +119,42 @@ def save_as_xlsx(data_dict, file_path):
     except Exception as e:
         print(f"Erro ao salvar no Excel: {e}")
 
-#Procurar campanhas na pagina HTML
-def processar_campanhas(uf, cidade, loja_nome, jornal_num):
+
+def processar_campanhas(uf, cidade, loja_nome):
     print("Selecionando a campanha, data, mes e dia")
-    
+    wait_local = WebDriverWait(driver, 15) 
+
     try:
-        time.sleep(2)
-        campanha= driver.find_element(By.XPATH, "//h1[contains(@class, 'text-sm font-bold text-atc-primary')]")
-        campanha_texto = campanha.get_attribute('outerHTML')
-        data = driver.find_element(By.XPATH, "//p[contains(@class , 'text-xs text-neutral-400')]")
-        data_texto = data.get_attribute('outerHTML')
+        campanhas_elementos = wait_local.until(
+            EC.presence_of_all_elements_located((By.XPATH, "//h1[contains(@class, 'text-sm font-bold text-atc-primary')]"))
+        )
+        datas_elementos = wait_local.until(
+            EC.presence_of_all_elements_located((By.XPATH, "//p[contains(@class , 'text-xs text-neutral-400')]"))
+        )
+
+        for jornal_num, (campanha_elem, data_elem) in enumerate(zip(campanhas_elementos, datas_elementos), start=1):
+            
+            campanha_texto = campanha_elem.get_attribute('outerHTML') 
+            data_texto_item = data_elem.get_attribute('outerHTML')
+            
+            if not campanha_texto:
+                print(f"Aviso: Campanha {jornal_num} não possui texto.")
+                continue
                 
-        dados = {
-            'Empresa': 'Atacadão',
-            'Campanha': campanha_texto,
-            'Cidade': cidade,
-            'Estado': uf,
-            'Loja': loja_nome,
-            'Jornal Número': jornal_num,
-            'Validade Texto': data_texto,
-            'Data Coleta': datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-        }
-        save_as_xlsx(dados, XLSX_FILE_PATH)
+            dados = {
+                'Empresa': 'Atacadão',
+                'Campanha': campanha_texto,
+                'Cidade': cidade,
+                'Estado': uf,
+                'Loja': loja_nome,
+                'Jornal Número': jornal_num,
+                'Validade Texto': data_texto_item, 
+                'Data Coleta': datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+            }
+            save_as_xlsx(dados, XLSX_FILE_PATH)
     
-    except:
-        print("Não foi possivel processar as campanhas")
+    except Exception as e:
+        print(f"Não foi possível processar as campanhas. Erro: {e}")
     
 
 try:
