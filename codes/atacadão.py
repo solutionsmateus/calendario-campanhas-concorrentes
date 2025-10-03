@@ -14,7 +14,7 @@ from datetime import datetime
  
 
 LOJAS_ESTADOS = {
-    "MA": ("São Luís", "São Luís"),
+    "BA": ("Vitória Da Conquista", "Vitória da Conquista"),
     "AL": ("Maceió", "Maceió Praia"),
     "CE": ("Fortaleza", "Fortaleza Fátima"),
     "PA": ("Belém", "Belém Portal da Amazônia"),
@@ -160,7 +160,7 @@ try:
         nome_loja_encontrada = clicar_loja_por_nome(loja_nome)
 
         if nome_loja_encontrada:
-            processar_campanhas(uf, cidade, nome_loja_encontrada, 1)
+            processar_campanhas(uf, cidade, nome_loja_encontrada)
             time.sleep(1)
 
 except Exception as e:
