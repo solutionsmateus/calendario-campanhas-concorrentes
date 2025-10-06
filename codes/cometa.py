@@ -1,4 +1,4 @@
-#Função principal para selecionar e ir com ChromeDrive.
+Função principal para selecionar e ir com ChromeDrive.
 
 import os
 import re
@@ -18,15 +18,15 @@ BASE_URL = "https://cometasupermercados.com.br/ofertas/"
 ENCARTE_DIR = Path.home() / "Desktop/Encartes-Concorrentes/Cometa-Supermercados"
 ENCARTE_DIR.mkdir(parents=True, exist_ok=True)
 
-# === CHROME HEADLESS ===
+#=== CHROME HEADLESS ===
 def iniciar_driver():
     options = webdriver.ChromeOptions()
-    options.add_argument("--headless=new")              # headless moderno
+    options.add_argument("--headless=new")               #headless moderno
     options.add_argument("--no-sandbox")
     options.add_argument("--disable-dev-shm-usage")
     options.add_argument("--disable-gpu")
     options.add_argument("--disable-features=VizDisplayCompositor")
-    options.add_argument("--window-size=1920,1080")     # substitui start-maximized no headless
+    options.add_argument("--window-size=1920,1080")      #substitui start-maximized no headless
     options.add_argument("--lang=pt-BR,pt")
     options.add_argument(
         "--user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
@@ -52,7 +52,7 @@ def procurador_campanhas():
 
 procurador_campanhas()
 
-#Select the elements and save in spreeadsheet       
+# Select the elements and save in spreeadsheet       
 def save_in_spreadsheet(campanha, data):
     try:
         print("Salvando na planilha")

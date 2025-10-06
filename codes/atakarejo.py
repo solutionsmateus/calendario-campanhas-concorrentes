@@ -1,4 +1,4 @@
-#Função principal para selecionar e ir com ChromeDrive.
+Função principal para selecionar e ir com ChromeDrive.
 
 import os
 import re
@@ -9,9 +9,6 @@ from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait, Select
 from selenium.webdriver.support import expected_conditions as EC
-
-
-#Importar bibliotecas para nova função de procurar campanhas.
 import pandas as pd
 from openpyxl import Workbook
  
@@ -22,12 +19,12 @@ ENCARTE_DIR.mkdir(parents=True, exist_ok=True)
 # === CHROME HEADLESS ===
 def build_headless_chrome():
     options = webdriver.ChromeOptions()
-    options.add_argument("--headless=new")              # headless moderno
+    options.add_argument("--headless=new")               
     options.add_argument("--no-sandbox")
     options.add_argument("--disable-dev-shm-usage")
     options.add_argument("--disable-gpu")
     options.add_argument("--disable-features=VizDisplayCompositor")
-    options.add_argument("--window-size=1920,1080")     # substitui start-maximized no headless
+    options.add_argument("--window-size=1920,1080")     
     options.add_argument("--lang=pt-BR,pt")
     options.add_argument(
         "--user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
@@ -42,7 +39,7 @@ links = driver.find_elements(By.XPATH, '//a[contains(@class, "button-download-of
 print(f"{len(links)} encarte(s) encontrado(s).")
 
 def encontrar_data():
-    # h3 - TEXT CSS IN PAGE TO FIND THE DATE OF PAGE
+     #h3 - TEXT CSS IN PAGE TO FIND THE DATE OF PAGE
     try: 
         enc_data = WebDriverWait(driver, 10).until(EC.presence_of_all_elements_located((By.XPATH, '//h3[contains("TEXT")]')))
     except:

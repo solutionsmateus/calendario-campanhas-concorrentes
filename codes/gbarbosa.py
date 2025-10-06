@@ -1,4 +1,4 @@
-#Função principal para selecionar e ir com ChromeDrive.
+Função principal para selecionar e ir com ChromeDrive.
 
 import os
 import re
@@ -20,7 +20,7 @@ ENCARTE_DIR.mkdir(parents=True, exist_ok=True)
 # ===== Chrome headless =====
 def build_headless_chrome(download_dir: Path):
     options = webdriver.ChromeOptions()
-    # Headless moderno e flags de CI
+     #Headless moderno e flags de CI
     options.add_argument("--headless=new")
     options.add_argument("--window-size=1920,1080")
     options.add_argument("--no-sandbox")
@@ -32,7 +32,7 @@ def build_headless_chrome(download_dir: Path):
         "--user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
         "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
     )
-    # Preferências de download
+#     Preferências de download
     prefs = {
         "download.prompt_for_download": False,
         "download.default_directory": str(download_dir),

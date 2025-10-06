@@ -1,4 +1,4 @@
-#Função principal para selecionar e ir com ChromeDrive.
+# Função principal para selecionar e ir com ChromeDrive.
 
 import os
 import re
@@ -33,7 +33,7 @@ def build_headless_chrome(download_dir: Path):
         "--user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
         "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
     )
-    # preferências de download (mantidas)
+   #  preferências de download (mantidas)
     prefs = {
         "download.prompt_for_download": False,
         "download.default_directory": str(download_dir),
@@ -47,7 +47,7 @@ driver = build_headless_chrome(ENCARTE_DIR)
 wait = WebDriverWait(driver, 20)
 
 def encontrar_data():
-    # "h6 - TEXT LOCATION OF DATES IN PAGE"
+  #   "h6 - TEXT LOCATION OF DATES IN PAGE"
     try:
         enc_data = WebDriverWait(driver, 10).until(
             EC.presence_of_all_elements_located((By.XPATH, "//h6[contains(\"TEXT\")]"))

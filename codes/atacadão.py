@@ -4,14 +4,15 @@ import time
 import requests
 import pandas as pd
 from openpyxl import Workbook
+import urllib.parse
 from pathlib import Path
 from selenium import webdriver
 from selenium.webdriver.common.by import By
+from selenium.common.exceptions import NoSuchElementException
 from selenium.webdriver.support.ui import WebDriverWait, Select
 from selenium.webdriver.support import expected_conditions as EC
 from datetime import datetime
 
- 
 
 LOJAS_ESTADOS = {
     "BA": ("Vitória Da Conquista", "Vitória da Conquista"),
@@ -22,39 +23,45 @@ LOJAS_ESTADOS = {
     "PE": ("Recife", "Recife Avenida Recife"),
     "PI": ("Teresina", "Teresina Primavera"),
     "SE": ("Aracaju", "Aracaju Tancredo Neves"),
-    "BA": ("Vitória Da Conquista", "Vitória da Conquista"),
     "MA": ("São Luís", "São Luís"),
-
 }
 
-ENCARTE_DIR = Path.home() / "Desktop/Encartes-Concorrentes/Atacadão"
 
-XLSX_FILE_PATH = ENCARTE_DIR / "campanhas_atacadão.xlsx" 
+ENCARTE_DIR = Path.home() / "Desktop/Encartes-Extraidos-Campanhas/Atacadão"
+ENCARTE_DIR.mkdir(parents=True, exist_ok=True) 
+
+XLSX_FILE_PATH = ENCARTE_DIR / "campanhas_atacadao.xlsx" 
 
 BASE_URL = "https://www.atacadao.com.br/institucional/nossas-lojas"
 
-# === CHROME HEADLESS ===
+
+driver = None
+wait = None
+
+#Buiding Headless Mode for Chrome
 def build_headless_chrome():
+    """Configura e retorna o driver Chrome em modo Headless."""
     options = webdriver.ChromeOptions()
-    options.add_argument("--headless=new")              
+    options.add_argument("--headless=new") 
     options.add_argument("--no-sandbox")
     options.add_argument("--disable-dev-shm-usage")
-    # options.add_argument("--disable-features=VizDisplayCompositor")
-    options.add_argument("--window-size=1920,1080")     # substitui start-maximized
+    options.add_argument("--window-size=1920,1080")
     options.add_argument("--lang=pt-BR,pt")
     options.add_argument("--start-maximized") 
-    # options.add_argument("--enable-unsafe-swiftshader")
-    user_agent = os.environ.get("HTTP_UA", "Mozilla/5.0 (...)") 
+    user_agent = os.environ.get("HTTP_UA", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/100.0.4896.75 Safari/537.36") 
     options.add_argument(f"--user-agent={user_agent}")
 
-    return webdriver.Chrome(options=options)
+    global driver, wait
+    driver = webdriver.Chrome(options=options)
+    wait = WebDriverWait(driver, 30)
 
-driver = build_headless_chrome()
-wait = WebDriverWait(driver, 30)
+    return driver
 
+#Functions to process Flyers
 def encontrar_data():
+    """Encontra a data do encarte para criar o nome da pasta (não usada na versão final, mas mantida)."""
     try:
-        enc_data = WebDriverWait(driver, 10).until(
+        enc_data = wait.until(
             EC.presence_of_all_elements_located((By.XPATH, '//p[contains(@class, "text-xs text-neutral-400")]')))
     except:
         return "sem_data"
@@ -67,6 +74,7 @@ def encontrar_data():
     return "sem_data"
 
 def clicar_confirmar():
+    """Tenta clicar no botão 'Confirmar' para fechar pop-ups."""
     try:
         confirmar_button = wait.until(
             EC.element_to_be_clickable((By.XPATH, "//button[normalize-space()='Confirmar']")))
@@ -75,6 +83,7 @@ def clicar_confirmar():
         pass
 
 def selecionar_uf_cidade(uf, cidade):
+    """Seleciona o Estado (UF) e a Cidade nos dropdowns."""
     Select(
         wait.until(EC.presence_of_element_located(
             (By.XPATH, "//select[contains(@class, 'md:w-[96px]')]")
@@ -86,9 +95,9 @@ def selecionar_uf_cidade(uf, cidade):
             (By.XPATH, "//select[contains(@class, 'md:w-[360px]')]")
         ))
     ).select_by_visible_text(cidade)
-    time.sleep(1)
-
+    time.sleep(1) 
 def clicar_loja_por_nome(loja_nome):
+    """Localiza e clica no link da loja com base no nome parcial."""
     wait.until(EC.presence_of_all_elements_located((By.CSS_SELECTOR, "[data-testid='store-card']")))
     lojas = driver.find_elements(By.CSS_SELECTOR, "[data-testid='store-card']")
     for loja in lojas:
@@ -98,14 +107,15 @@ def clicar_loja_por_nome(loja_nome):
                 botao = loja.find_element(By.TAG_NAME, "a")
                 print(f"Acessando loja: {titulo}")
                 botao.click()
-                return titulo
+                return titulo # Retorna o nome completo da loja
         except:
             continue
     print(f" Loja '{loja_nome}' não encontrada.")
     return None
 
-#Select the elements and save spreadsheet       
+#Function to save as xlsx
 def save_as_xlsx(data_dict, file_path):
+    """Carrega dados existentes, anexa os novos dados e salva a planilha."""
     try:
         df_novo = pd.DataFrame([data_dict])
         if file_path.exists():
@@ -115,57 +125,74 @@ def save_as_xlsx(data_dict, file_path):
             df_final = df_novo
             
         df_final.to_excel(file_path, index=False, engine='openpyxl')
-        print(f"Dados anexados/salvos em {file_path}")
+        print(f" Dados anexados/salvos em {file_path.name}")
     except Exception as e:
-        print(f"Erro ao salvar no Excel: {e}")
+        print(f" Erro ao salvar no Excel: {e}")
 
-#Procurar campanhas na pagina HTML
-def processar_campanhas(uf, cidade, loja_nome, jornal_num):
-    print("Selecionando a campanha, data, mes e dia")
-    
+
+#Main Function
+def processar_campanhas(uf, cidade, loja_nome):
     try:
-        time.sleep(2)
-        campanha= driver.find_element(By.XPATH, "//h1[contains(@class, 'text-sm font-bold text-atc-primary')]")
-        campanha_texto = campanha.get_attribute('outerHTML')
-        data = driver.find_element(By.XPATH, "//p[contains(@class , 'text-xs text-neutral-400')]")
-        data_texto = data.get_attribute('outerHTML')
-                
-        dados = {
-            'Empresa': 'Atacadão',
-            'Campanha': campanha_texto,
-            'Cidade': cidade,
-            'Estado': uf,
-            'Loja': loja_nome,
-            'Jornal Número': jornal_num,
-            'Validade Texto': data_texto,
-            'Data Coleta': datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-        }
-        save_as_xlsx(dados, XLSX_FILE_PATH)
-    
-    except:
-        print("Não foi possivel processar as campanhas")
-    
+        WebDriverWait(driver, 10).until(
+            EC.presence_of_all_elements_located((By.XPATH, "//h1[contains(@class, 'text-sm font-bold text-atc-primary')]"))
+        )
+
+        campanhas = driver.find_elements(By.XPATH, "//h1[contains(@class, 'text-sm font-bold text-atc-primary')]")
+        data = driver.find_elements(By.XPATH, "//p[contains(@class , 'text-xs text-neutral-400')]")
+        
+        num_flyers = min(len(campanhas), len(data))
+        print(f" Encontrados {num_flyers} encartes para extração.")
+
+        for i in range(num_flyers):
+            
+            campanha_titulo = campanhas[i].text 
+            data_validade = data[i].text
+            
+            jornal_num = i + 1 
+            
+            dados = {
+                'Empresa': 'Atacadão',
+                'Campanha_Titulo': campanha_titulo,  # Texto limpo
+                'Validade_Texto': data_validade,  # Texto limpo
+                'Campanha_HTML_Bruto': campanhas[i].get_attribute('outerHTML'), # Se precisar do HTML
+                'Validade_HTML_Bruto': data[i].get_attribute('outerHTML'),     # Se precisar do HTML
+                'Cidade': cidade,
+                'Estado': uf,
+                'Loja': loja_nome,
+                'Jornal_Número': jornal_num,
+                'Data_Coleta': datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+            }
+            save_as_xlsx(dados, XLSX_FILE_PATH)
+        
+    except Exception as e:
+        print(f" Não foi possível processar as campanhas da loja {loja_nome}. Erro: {e}")
+
+
+build_headless_chrome() 
 
 try:
+    print("Procurando os Encartes")
+    
     driver.get(BASE_URL)
     clicar_confirmar()
+    time.sleep(2) 
 
-    for uf, (cidade, loja_nome) in LOJAS_ESTADOS.items():
-        print(f"\n Estado: {uf} | Cidade: {cidade} | Loja: {loja_nome}")
+    for uf, (cidade, loja_nome_busca) in LOJAS_ESTADOS.items():
+        print(f" Processando UF: {uf} | Cidade: {cidade} | Loja: {loja_nome_busca} ")
+        
         driver.get(BASE_URL)
-        time.sleep(2)
-        clicar_confirmar()
-
+        clicar_confirmar() 
+        
         selecionar_uf_cidade(uf, cidade)
-        nome_loja_encontrada = clicar_loja_por_nome(loja_nome)
+        
+        nome_loja_encontrada = clicar_loja_por_nome(loja_nome_busca)
 
         if nome_loja_encontrada:
             processar_campanhas(uf, cidade, nome_loja_encontrada)
-            time.sleep(1)
-
+        
 except Exception as e:
-    print(f" Erro geral: {e}")
+    print(f" Erro geral no script: {e}")
 
 finally:
-    print(" Execução finalizada")
+    print("\nExecução finalizada.")
     driver.quit()

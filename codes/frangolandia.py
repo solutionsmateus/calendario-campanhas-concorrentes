@@ -1,4 +1,4 @@
-#Função principal para selecionar e ir com ChromeDrive.
+Função principal para selecionar e ir com ChromeDrive.
 
 import os
 import re
@@ -10,7 +10,7 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait, Select
 from selenium.webdriver.support import expected_conditions as EC
 
-#Importar bibliotecas para nova função de procurar campanhas.
+# Importar bibliotecas para nova função de procurar campanhas.
 import pandas as pd
 from openpyxl import Workbook
 
@@ -21,14 +21,14 @@ os.makedirs(ENCARTE_DIR, exist_ok=True)
 # ========= CHROME HEADLESS =========
 def build_headless_chrome():
     options = webdriver.ChromeOptions()
-    # preferências (mantive as suas para PDF; não atrapalham, mesmo não sendo usadas aqui)
+# preferências (mantive as suas para PDF; não atrapalham, mesmo não sendo usadas aqui)
     prefs = {
         "download.prompt_for_download": False,
         "plugins.always_open_pdf_externally": True
     }
     options.add_experimental_option("prefs", prefs)
 
-    # headless e flags de CI
+#     headless e flags de CI
     options.add_argument("--headless=new")
     options.add_argument("--window-size=1920,1080")
     options.add_argument("--no-sandbox")
@@ -46,7 +46,7 @@ driver = build_headless_chrome()
 wait = WebDriverWait(driver, 15)
 
 def encontrar_data():
-    # Exemplo de busca por textos de botões/labels na página (ajuste o seletor se quiser usar)
+     #Exemplo de busca por textos de botões/labels na página (ajuste o seletor se quiser usar)
     try:
         enc_data = WebDriverWait(driver, 10).until(EC.presence_of_all_elements_located((By.XPATH, '//span[contains(@class, "elementor-button-text")]')))
     except Exception:
