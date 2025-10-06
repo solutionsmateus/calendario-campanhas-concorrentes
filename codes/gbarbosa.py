@@ -1,4 +1,4 @@
-Função principal para selecionar e ir com ChromeDrive.
+#Função principal para selecionar e ir com ChromeDrive.
 
 import os
 import re
@@ -8,19 +8,19 @@ from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait, Select
 from selenium.webdriver.support import expected_conditions as EC
+from datetime import datetime
 
 #Importar bibliotecas para nova função de procurar campanhas.
 import pandas as pd
 from openpyxl import Workbook
 
 BASE_URL = "https://blog.gbarbosa.com.br/ofertas/"
-ENCARTE_DIR = Path.home() / "Desktop/Encartes-Concorrentes/G-Barbosa"
-ENCARTE_DIR.mkdir(parents=True, exist_ok=True)
+XLSX_FILE_PATH = Path.home() / "Desktop/Encartes-Extraidos-Campanhas/G-Barbosa"
+XLSX_FILE_PATH.mkdir(parents=True, exist_ok=True)
 
 # ===== Chrome headless =====
 def build_headless_chrome(download_dir: Path):
     options = webdriver.ChromeOptions()
-     #Headless moderno e flags de CI
     options.add_argument("--headless=new")
     options.add_argument("--window-size=1920,1080")
     options.add_argument("--no-sandbox")
@@ -42,53 +42,50 @@ def build_headless_chrome(download_dir: Path):
     options.add_experimental_option("prefs", prefs)
     return webdriver.Chrome(options=options)
 
-driver = build_headless_chrome(ENCARTE_DIR)
+driver = build_headless_chrome(XLSX_FILE_PATH)
 wait = WebDriverWait(driver, 25)
+
+def save_as_xlsx(data_dict, file_path):
+    try:
+        df_novo = pd.DataFrame([data_dict])
+        if file_path.exists():
+            df_existente = pd.read_excel(file_path, engine='openpyxl')
+            df_final = pd.concat([df_existente, df_novo], ignore_index=True)
+        else:
+            df_final = df_novo
+            
+        df_final.to_excel(file_path, index=False, engine='openpyxl')
+        print(f" Dados anexados/salvos em {file_path.name}")
+    except Exception as e:
+        print(f" Erro ao salvar no Excel: {e}")    
+        
 
 def processar_campanhas(uf: str):
     print(f"\n Processando campanhas do estado: {uf}")
-    driver.get(BASE_URL)
     time.sleep(5)
-
     try:
-        botao_estado = wait.until(EC.element_to_be_clickable((By.XPATH, f'//button[normalize-space()="{"AL"}"]')))
-        botao_estado.click()
-        time.sleep(3)
-        campanha = driver.find_element(By.XPATH, "h3//[contains('text')]")
-        campanha = campanha.text
-        data = driver.find_element(By.XPATH, "p//[contains('text')]")
-        data = data.text
-    except:
-        print("Estado AL (Alagoas) não processado")
-        return
-    
-    try: 
-        botao_estado = wait.until(EC.element_to_be_clickable((By.XPATH, f'//button[normalize-space()="{"SE"}"]')))
-        botao_estado.click()
-        time.sleep(3)
-        campanha = driver.find_element(By.XPATH, "h2//contain('text')")
-        campanha.text
-        data = driver.find_element(By.XPATH, "p//[contains('text')]")
-        data.text
-    except:
-        print("Estado SE (Sergipe) não processado.")
-
-processar_campanhas()
+        campanha = driver.find_elements(By.XPATH, "h3//[contains('text')]")
+        data = driver.find_elements(By.XPATH, "p//[contains('text')]")
         
-def save_in_spreadsheet(campanha, data):
-    try:
-        print("Salvando na planilha")
-        time.sleep(2)
-        workbook = Workbook()
-        sheet = workbook.active
-        sheet["A1"] = "Empresa", sheet["A2"] = "GBarbosa"
-        sheet["B1"] = "Campanha", sheet["B2"] = campanha
-        sheet["C1"] = "Data", sheet["C2"] = data
-        workbook.save = ENCARTE_DIR/"campanhas_gbarbosa.xlsx"
-    except:
-        print("Não foi possivel salvar")
-       
-save_in_spreadsheet()
+        num_flyers = min(len(campanha), len(data))
+        
+        print(f"Encartes encontrados {num_flyers}")
+        
+        for i in range(num_flyers):
+            campanha[i].text
+            data[i].text
+            
+            dados = {
+                'Empresa': 'GBarbosa',
+                'Campanha_Titulo': campanha,  # Texto limpo
+                'Validade_Texto': data,  # Texto limpo
+                'Cidade': 'Maceió e Aracaju',
+                'Estado': 'AL e SE',
+                'Data_Coleta': datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+            }
+            save_as_xlsx(dados, XLSX_FILE_PATH)
     
+    except:
+        print(f"Não foi possivel processar as campanhas {num_flyers}")
+        
 driver.quit()
-print("\nFinalizado.")

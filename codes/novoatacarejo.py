@@ -9,14 +9,15 @@ from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait, Select
 from selenium.webdriver.support import expected_conditions as EC
+from datetime import datetime
 
 #Importar bibliotecas para nova função de procurar campanhas.
 import pandas as pd
 from openpyxl import Workbook
 
 BASE_URL = "https://novoatacarejo.com/oferta/"
-ENCARTE_DIR = Path.home() / "Desktop/Encartes-Concorrentes"
-ENCARTE_DIR.mkdir(parents=True, exist_ok=True)
+XLSX_FILE_PATH = Path.home() / "Desktop/Encartes-Extraidos-Campanhas/Novo-Atacarejo"
+XLSX_FILE_PATH.mkdir(parents=True, exist_ok=True)
 
 # === CHROME HEADLESS ===
 def build_headless_chrome(download_dir: Path):
@@ -43,7 +44,7 @@ def build_headless_chrome(download_dir: Path):
     options.add_experimental_option("prefs", prefs)
     return webdriver.Chrome(options=options)
 
-driver = build_headless_chrome(ENCARTE_DIR)
+driver = build_headless_chrome(XLSX_FILE_PATH)
 wait = WebDriverWait(driver, 20)
 
 def encontrar_data():
@@ -69,23 +70,38 @@ def selecionar_loja():
 
 selecionar_loja()
 
-def procurar_campanhas():
-    campanha_and_data = driver.find_element(By.XPATH, "h6//contains('text')")
-    campanha_and_data.text
-    Select(campanha_and_data)
-
-def save_in_spreadsheet(campanha_and_data):
+def save_as_xlsx(data_dict, file_path):
     try:
-        print("Salvando na planilha")
-        time.sleep(2)
-        workbook = Workbook()
-        sheet = workbook.active
-        sheet["A1"] = "Empresa", sheet["A2"] = "Novo Atacarejo"
-        sheet["B1"] = "Campanha", sheet["B2"] = campanha_and_data
-        workbook.save = ENCARTE_DIR/"campanhas_novoatacarejo.xlsx"
+        df_novo = pd.DataFrame([data_dict])
+        if file_path.exists():
+            df_existente = pd.read_excel(file_path, engine='openpyxl')
+            df_final = pd.concat([df_existente, df_novo], ignore_index=True)
+        else:
+            df_final = df_novo
+            
+        df_final.to_excel(file_path, index=False, engine='openpyxl')
+        print(f" Dados anexados/salvos em {file_path.name}")
+    except Exception as e:
+        print(f" Erro ao salvar no Excel: {e}")    
+        
+
+def procurar_campanhas():
+    try:
+        campanha_and_data = driver.find_elements(By.XPATH, "h6//contains('text')")
+        num_flyers = min(len(campanha_and_data))
+        for i in range(num_flyers):
+            campanha_and_data[i].text
+            
+            dados = {
+                'Empresa': 'GBarbosa',
+                'Campanha_Titulo': campanha_and_data,  # Texto limpo
+                'Validade_Texto': campanha_and_data,  # Texto limpo
+                'Cidade': 'Maceió e Aracaju',
+                'Estado': 'AL e SE',
+                'Data_Coleta': datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+            }
+            save_as_xlsx(dados, XLSX_FILE_PATH)
     except:
-        print("Não foi possivel salvar")
-       
-save_in_spreadsheet()
-    
+        print(f"Não foi possivel processar as campanhas {num_flyers}")
+  
 driver.quit()
