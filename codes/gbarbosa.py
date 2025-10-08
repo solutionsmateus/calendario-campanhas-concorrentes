@@ -1,5 +1,3 @@
-#Função principal para selecionar e ir com ChromeDrive.
-
 import os
 import re
 import time
@@ -9,17 +7,18 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait, Select
 from selenium.webdriver.support import expected_conditions as EC
 from datetime import datetime
-
-#Importar bibliotecas para nova função de procurar campanhas.
 import pandas as pd
 from openpyxl import Workbook
 
 BASE_URL = "https://blog.gbarbosa.com.br/ofertas/"
-XLSX_FILE_PATH = Path.home() / "Desktop/Encartes-Extraidos-Campanhas/G-Barbosa"
-XLSX_FILE_PATH.mkdir(parents=True, exist_ok=True)
+ENCARTE_DIR = Path.home() / "Desktop/Encartes-Extraidos-Campanhas/G-Barbosa"
+ENCARTE_DIR.mkdir(parents=True, exist_ok=True)
+
+XLSX_FILE_PATH = ENCARTE_DIR / "campanhas_gbarbosa.xlsx" 
+
 
 # ===== Chrome headless =====
-def build_headless_chrome(download_dir: Path):
+def build_headless_chrome():
     options = webdriver.ChromeOptions()
     options.add_argument("--headless=new")
     options.add_argument("--window-size=1920,1080")
@@ -32,18 +31,12 @@ def build_headless_chrome(download_dir: Path):
         "--user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
         "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
     )
-#     Preferências de download
-    prefs = {
-        "download.prompt_for_download": False,
-        "download.default_directory": str(download_dir),
-        "download.directory_upgrade": True,
-        "safebrowsing.enabled": True
-    }
-    options.add_experimental_option("prefs", prefs)
     return webdriver.Chrome(options=options)
 
-driver = build_headless_chrome(XLSX_FILE_PATH)
+
+driver = build_headless_chrome()
 wait = WebDriverWait(driver, 25)
+driver.get(BASE_URL)
 
 def save_as_xlsx(data_dict, file_path):
     try:
@@ -60,25 +53,24 @@ def save_as_xlsx(data_dict, file_path):
         print(f" Erro ao salvar no Excel: {e}")    
         
 
-def processar_campanhas(uf: str):
+def processar_campanhas(uf):
     print(f"\n Processando campanhas do estado: {uf}")
     time.sleep(5)
     try:
-        campanha = driver.find_elements(By.XPATH, "h3//[contains('text')]")
+        campanhas = driver.find_elements(By.XPATH, "h3//[contains('text')]")
         data = driver.find_elements(By.XPATH, "p//[contains('text')]")
-        
-        num_flyers = min(len(campanha), len(data))
-        
-        print(f"Encartes encontrados {num_flyers}")
+        campanhas_filtradas = [c for c in campanhas if c.text.strip() != ""]
+        num_flyers = min(len(campanhas), len(data))
+        print(f"Campanhas encontradas: {num_flyers}")
         
         for i in range(num_flyers):
-            campanha[i].text
-            data[i].text
+            titulo_campanha = campanhas_filtradas[i].text.strip()
+            titulo_data = campanhas_filtradas[i].text.strip()
             
             dados = {
                 'Empresa': 'GBarbosa',
-                'Campanha_Titulo': campanha,  # Texto limpo
-                'Validade_Texto': data,  # Texto limpo
+                'Campanha_Titulo': titulo_campanha,  # Texto limpo
+                'Validade_Texto': titulo_data,  # Texto limpo
                 'Cidade': 'Maceió e Aracaju',
                 'Estado': 'AL e SE',
                 'Data_Coleta': datetime.now().strftime('%Y-%m-%d %H:%M:%S')
@@ -88,4 +80,13 @@ def processar_campanhas(uf: str):
     except:
         print(f"Não foi possivel processar as campanhas {num_flyers}")
         
-driver.quit()
+        
+try:
+    dados_coletados = processar_campanhas()
+    if dados_coletados:
+        save_as_xlsx(dados_coletados, XLSX_FILE_PATH)
+    print("Processo finalizado")
+except:
+    print("Não foi possivel processar os dados")
+finally:       
+    driver.quit()

@@ -1,5 +1,3 @@
-#Função principal para selecionar e ir com ChromeDrive.
-
 import os
 import re
 import time
@@ -10,8 +8,6 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait, Select
 from selenium.webdriver.support import expected_conditions as EC
 from datetime import datetime
-
-#Importar bibliotecas para nova função de procurar campanhas.
 import pandas as pd
 from openpyxl import Workbook
 

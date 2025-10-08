@@ -1,5 +1,3 @@
-#Função principal para selecionar e ir com ChromeDrive.
-
 import os
 import re
 import time
