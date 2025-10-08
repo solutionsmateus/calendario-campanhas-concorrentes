@@ -15,8 +15,11 @@ from openpyxl import Workbook
 from datetime import datetime
 
 BASE_URL = "https://frangolandia.com/encartes/"
-XLSX_FILE_PATH = Path.home() / "Desktop/Encartes-Concorrentes/Frangolandia"
-os.makedirs(XLSX_FILE_PATH, exist_ok=True)
+ENCARTE_DIR = Path.home() / "Desktop/Encartes-Extraidos-Campanhas/Frangolandia"
+ENCARTE_DIR.mkdir(parents=True, exist_ok=True)
+
+XLSX_FILE_PATH = ENCARTE_DIR / "campanhas_frangolandia.xlsx" 
+
 
 def build_headless_chrome():
     options = webdriver.ChromeOptions()
@@ -40,6 +43,7 @@ def build_headless_chrome():
 
 driver = build_headless_chrome()
 wait = WebDriverWait(driver, 15)
+driver.get(BASE_URL)
 
 def encontrar_data():
     try:
@@ -67,39 +71,41 @@ def save_as_xlsx(data_dict, file_path):
         print(f" Dados anexados/salvos em {file_path.name}")
     except Exception as e:
         print(f" Erro ao salvar no Excel: {e}")   
+        
 
     
-def procurar_campanhas(campanha, data):
+def procurar_campanhas():
     try:
         data = driver.find_elements(By.XPATH, "//span[contains(@class, 'elementor-button-text')]")
-        campanha = driver.find_elements(By.XPATH, "//h3[contains(@class, 'elementor-heading-title elementor-size-default')]")
-        num_flyers = min(len(campanha), len(data))
+        campanhas = driver.find_elements(By.XPATH, "//h3[contains(@class, 'elementor-heading-title elementor-size-default')]")
+        campanhas_filtradas = [c for c in campanhas if c.text.strip() != ""]
+        num_flyers = min(len(campanhas), len(data))
         print(f"Campanhas encontradas: {num_flyers}")
         
         for i in range(num_flyers):
-           campanha[i].text 
-           data[i].text   
+           titulo_campanha = campanhas_filtradas[i].text.strip()
+           data_titulo = campanhas_filtradas[i].text.strip()   
            
            dados = {
                 'Empresa': 'Frangolandia',
-                'Campanha_Titulo': campanha,  # Texto limpo
-                'Validade_Texto': data,  # Texto limpo
+                'Campanha_Titulo': titulo_campanha,  # Texto limpo
+                'Validade_Texto': data_titulo,  # Texto limpo
                 'Cidade': 'Fortaleza',
                 'Estado': 'CE',
                 'Data_Coleta': datetime.now().strftime('%Y-%m-%d %H:%M:%S')
             }
-        save_as_xlsx(dados, XLSX_FILE_PATH)
+           
+           save_as_xlsx(dados, XLSX_FILE_PATH)
     except Exception as e:
         print(f"Não foi possivel processar as campanhas {num_flyers}")
-
-
-#Select the elements and save in spreeadsheet       
-
+                
+        
 try:
-    procurar_campanhas(campanha=1, data=1)
-    save_as_xlsx(data_dict=1, file_path=1)
-    print("\n Processo finalizado.")
+    dados_coletados = procurar_campanhas()
+    if dados_coletados:
+        save_as_xlsx(dados_coletados, XLSX_FILE_PATH)
+    print("\nProcesso finalizado.")
 except Exception as e:
-    print(f" Erro geral: {e}")
+    print(f"Erro geral: {e}")
 finally:
     driver.quit()

@@ -96,6 +96,7 @@ def selecionar_uf_cidade(uf, cidade):
         ))
     ).select_by_visible_text(cidade)
     time.sleep(1) 
+
 def clicar_loja_por_nome(loja_nome):
     """Localiza e clica no link da loja com base no nome parcial."""
     wait.until(EC.presence_of_all_elements_located((By.CSS_SELECTOR, "[data-testid='store-card']")))
@@ -148,7 +149,7 @@ def processar_campanhas(uf, cidade, loja_nome):
             campanha_titulo = campanhas[i].text 
             data_validade = data[i].text
             
-            jornal_num = i + 1 
+            jornal_num = i 
             
             dados = {
                 'Empresa': 'Atacadão',

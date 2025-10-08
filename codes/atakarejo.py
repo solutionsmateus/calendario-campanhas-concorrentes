@@ -14,8 +14,12 @@ from openpyxl import Workbook
 from datetime import datetime
 
 
-XLSX_FILE_PATH = Path.home() / "Desktop/Encartes-Extraidos-Campanhas/Atakarejo"
-XLSX_FILE_PATH.mkdir(parents=True, exist_ok=True)
+ENCARTE_DIR = Path.home() / "Desktop/Encartes-Extraidos-Campanhas/Atakarejo"
+ENCARTE_DIR.mkdir(parents=True, exist_ok=True)
+
+XLSX_FILE_PATH = ENCARTE_DIR / "campanhas_atakarejo.xlsx" 
+
+
 
 # === CHROME HEADLESS ===
 def build_headless_chrome():
@@ -72,25 +76,33 @@ def save_as_xlsx(data_dict, file_path):
     
 #Procurar campanhas na Pagina HTML
 def procurar_campanhas():
-    print("Selecionando a campanha, data, mes e dia")
-    campanha_and_data = driver.find_element(By.XPATH, "//h3[contains('text')]")
-    min(len(campanha_and_data))
-    
     try:
-        print(f"Lido encarte {campanha_and_data}" )
-        campanha_and_data.text
-        dados = {
-                'Empresa': 'Atakarejo',
-                'Campanha_Titulo': campanha_and_data,  # Texto limpo
-                'Validade_Texto': campanha_and_data,  # Texto limpo
-                'Cidade': 'Vitória da Conquista',
-                'Estado': 'Bahia',
-                'Data_Coleta': datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        cards = driver.find_elements(By.CSS_SELECTOR, "div.subitem.active")
+        print(f"Encontrados: {len(cards)}")
+        if not cards:
+            print("Nenhum card encontrado.")
+            return
+
+        for i, card in enumerate(cards, 1):
+            h3 = card.find_elements(By.TAG_NAME, "h3")
+            h4 = card.find_elements(By.TAG_NAME, "h4")
+
+            dados = {
+                "Empresa": "Atakarejo",
+                "Campanha_Titulo": h3[0].text.strip() if len(h3) > 0 else "",
+                "Validade_Texto": (h3[1].text.strip() if len(h3) > 1
+                                   else (h4[0].text.strip() if h4 else "")),
+                "Cidade": "Vitória da Conquista",
+                "Estado": "Bahia",
+                "Data_Coleta": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
             }
-        save_as_xlsx(dados, XLSX_FILE_PATH)
-        
-    except:
-        print("Campanhas e datas não encontradas")
+
+            save_as_xlsx(dados, XLSX_FILE_PATH)
+            print(f"[{i}] Encarte salvo salva.")
+    except Exception as e:
+        print(f"Erro ao procurar campanhas/datas: {e}")
+    
+procurar_campanhas()
     
 
 """for i, link in enumerate(links):
