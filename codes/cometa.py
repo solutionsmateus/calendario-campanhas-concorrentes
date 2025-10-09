@@ -45,7 +45,7 @@ def save_as_xlsx(data_dict, file_path):
             df_final = df_novo
             
         df_final.to_excel(file_path, index=False, engine='openpyxl')
-        print(f" Dados anexados/salvos em {file_path.name}")
+        print(f" Dados da campanha '{data_dict['Campanha_Titulo']}' salvos.")
     except Exception as e:
         print(f" Erro ao salvar no Excel: {e}")    
         
@@ -54,27 +54,35 @@ def procurador_campanhas():
     try:
         driver.get(BASE_URL)
         wait = WebDriverWait(driver, 20)
+        
+        # --- CORREÇÃO AQUI ---
+        # 1. O título da campanha está em um <h3> com a classe 'elementor-heading-title'
         campanhas = wait.until(EC.presence_of_all_elements_located(
-            (By.XPATH, "//h3[contains(@class,'jet-listing-dynamic-field__content')]")
+            (By.XPATH, "//h3[contains(@class, 'elementor-heading-title')]")
         ))
+        
+        # 2. A data está em uma <div> com a classe 'jet-listing-dynamic-field__content'
         datas = driver.find_elements(
-            By.XPATH, "//h4[contains(@class,'jet-listing-dynamic-field__content')]"
+            By.XPATH, "//div[contains(@class,'jet-listing-dynamic-field__content')]"
         )
+        
+        # O site tem um texto extra que precisamos ignorar, por isso pegamos apenas os textos de data
+        textos_datas = [d.text.strip() for d in datas if "Ofertas válidas" in d.text]
 
-        num_flyers = min(len(campanhas), len(datas))
+        num_flyers = min(len(campanhas), len(textos_datas))
         print(f"Ofertas encontradas: {num_flyers}")
 
-        for i, (c_elem, d_elem) in enumerate(zip(campanhas, datas), start=1):
+        for i in range(num_flyers):
             dados = {
                 "Empresa": "Cometa Supermercados",
-                "Campanha_Titulo": c_elem.text.strip(),
-                "Validade_Texto": d_elem.text.strip(),
+                "Campanha_Titulo": campanhas[i].text.strip(),
+                "Validade_Texto": textos_datas[i],
                 "Cidade": "Fortaleza",
                 "Estado": "CE",
                 "Data_Coleta": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
             }
             save_as_xlsx(dados, XLSX_FILE_PATH)
-            print(f"Campanha {i} salva.")
+            
     except Exception as e:
         print(f"Não foi possível processar as campanhas: {e}")
 
@@ -82,5 +90,6 @@ def procurador_campanhas():
 driver = iniciar_driver()
 try:
     procurador_campanhas()
+    print("\nProcesso finalizado.")
 finally:
     driver.quit()

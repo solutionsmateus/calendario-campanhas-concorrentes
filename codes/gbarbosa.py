@@ -4,7 +4,7 @@ import time
 from pathlib import Path
 from selenium import webdriver
 from selenium.webdriver.common.by import By
-from selenium.webdriver.support.ui import WebDriverWait, Select
+from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from datetime import datetime
 import pandas as pd
@@ -33,11 +33,6 @@ def build_headless_chrome():
     )
     return webdriver.Chrome(options=options)
 
-
-driver = build_headless_chrome()
-wait = WebDriverWait(driver, 25)
-driver.get(BASE_URL)
-
 def save_as_xlsx(data_dict, file_path):
     try:
         df_novo = pd.DataFrame([data_dict])
@@ -48,45 +43,72 @@ def save_as_xlsx(data_dict, file_path):
             df_final = df_novo
             
         df_final.to_excel(file_path, index=False, engine='openpyxl')
-        print(f" Dados anexados/salvos em {file_path.name}")
+        print(f"  -> Dados da campanha '{data_dict['Campanha_Titulo']}' salvos para o estado {data_dict['Estado']}.")
     except Exception as e:
-        print(f" Erro ao salvar no Excel: {e}")    
+        print(f"  -> Erro ao salvar no Excel: {e}")    
         
 
+# A função continua a mesma, recebendo o estado (uf) como parâmetro
 def processar_campanhas(uf):
-    print(f"\n Processando campanhas do estado: {uf}")
-    time.sleep(5)
+    print(f" Processando campanhas do estado: {uf}")
+    time.sleep(2) # Espera para os cards do estado carregarem
     try:
-        campanhas = driver.find_elements(By.XPATH, "h3//[contains('text')]")
-        data = driver.find_elements(By.XPATH, "p//[contains('text')]")
-        campanhas_filtradas = [c for c in campanhas if c.text.strip() != ""]
-        num_flyers = min(len(campanhas), len(data))
-        print(f"Campanhas encontradas: {num_flyers}")
+        # Seletores buscam apenas os encartes visíveis do estado selecionado
+        campanhas = driver.find_elements(By.XPATH, "//div[@class='encarte-item' and contains(@style,'display: block')]/h2")
+        datas = driver.find_elements(By.XPATH, "//div[@class='encarte-item' and contains(@style,'display: block')]/p")
+        
+        num_flyers = len(campanhas)
+        if num_flyers == 0:
+            print(f" Nenhuma campanha encontrada para {uf}.")
+            return
+            
+        print(f" {num_flyers} campanhas encontradas para {uf}.")
         
         for i in range(num_flyers):
-            titulo_campanha = campanhas_filtradas[i].text.strip()
-            titulo_data = campanhas_filtradas[i].text.strip()
+            titulo_campanha = campanhas[i].text.strip()
+            validade_texto = datas[i].text.strip()
             
             dados = {
                 'Empresa': 'GBarbosa',
-                'Campanha_Titulo': titulo_campanha,  # Texto limpo
-                'Validade_Texto': titulo_data,  # Texto limpo
-                'Cidade': 'Maceió e Aracaju',
-                'Estado': 'AL e SE',
+                'Campanha_Titulo': titulo_campanha,
+                'Validade_Texto': validade_texto,
+                'Cidade': f'Cidades de {uf}',
+                'Estado': uf,
                 'Data_Coleta': datetime.now().strftime('%Y-%m-%d %H:%M:%S')
             }
             save_as_xlsx(dados, XLSX_FILE_PATH)
     
-    except:
-        print(f"Não foi possivel processar as campanhas {num_flyers}")
-        
-        
+    except Exception as e:
+        print(f" Não foi possível processar as campanhas de {uf}. Erro: {e}")
+
+driver = build_headless_chrome()
+wait = WebDriverWait(driver, 25)
+
 try:
-    dados_coletados = processar_campanhas()
-    if dados_coletados:
-        save_as_xlsx(dados_coletados, XLSX_FILE_PATH)
-    print("Processo finalizado")
-except:
-    print("Não foi possivel processar os dados")
+    print("Iniciando processo de coleta no GBarbosa...")
+    driver.get(BASE_URL)
+    wait.until(EC.presence_of_element_located((By.XPATH, "//button[@class='estado-btn']"))) # Espera os botões carregarem
+    
+    print("-" * 30)
+    processar_campanhas('AL')
+    
+    print("-" * 30)
+    try:
+        print("Mudando para o estado SE...")
+        botao_estado_se = wait.until(EC.element_to_be_clickable(
+            (By.XPATH, f"//button[@class='estado-btn' and text()='SE']")
+        ))
+        botao_estado_se.click()
+        
+        processar_campanhas('SE')
+
+    except Exception as e:
+        print(f" Erro ao processar o estado SE: {e}")
+
+    print("-" * 30)
+    print("\nProcesso finalizado com sucesso.")
+
+except Exception as e:
+    print(f"\nOcorreu um erro geral no processo: {e}")
 finally:       
     driver.quit()
