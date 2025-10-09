@@ -62,7 +62,7 @@ jobs:
 
       - name: Executar scripts da matrix
         shell: pwsh
-        working-directory: calendario-campanhas-concorrentes
+        working-directory: ./codes
         run: |
           echo "OUTPUT_DIR=$env:OUTPUT_DIR"
           python "${{ matrix.scripts }}"
