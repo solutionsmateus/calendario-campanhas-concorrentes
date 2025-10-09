@@ -1,4 +1,4 @@
-- name: calendario-campanhas-concorrentes
+name: calendario-campanhas-concorrentes
   
 on:
   push:
