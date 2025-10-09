@@ -29,7 +29,9 @@ jobs:
           - atakarejo.py
           - gbarbosa.py
 
-     steps:
+    # CORREÇÃO: O bloco 'steps' foi movido para a indentação correta,
+    # alinhado com 'runs-on', 'env' e 'strategy'.
+    steps:
       - name: Checkout (repo atual)
         uses: actions/checkout@v4
         with:
@@ -72,4 +74,3 @@ jobs:
           name: encartes-${{ github.run_id }}-${{ matrix.scripts }}-attempt${{ github.run_attempt }}
           if-no-files-found: warn
           path: ${{ env.OUTPUT_DIR }}/**
-        
