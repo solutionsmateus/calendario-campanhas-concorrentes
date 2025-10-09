@@ -1,5 +1,5 @@
 name: calendario-campanhas-concorrentes
-  
+
 on:
   push:
     branches: ["main"]
@@ -7,17 +7,16 @@ on:
     branches: ["main"]
   workflow_dispatch:
   schedule:
-    - cron: '0 12 * * *'  # todos os dias às 9:00 UTC
+    - cron: '0 9 * * *'  # Agendado para rodar todos os dias às 9:00 UTC (6:00 no seu fuso)
 
 jobs:
   build:
     runs-on: windows-latest
     permissions:
-      contents: write
+      contents: read # Alterado para 'read', pois a ação de upload não precisa de permissão de escrita no repo
     env:
-      # Pasta única de saída; use este caminho nos scripts (via env OUTPUT_DIR)
       OUTPUT_DIR: ${{ github.workspace }}/Encartes
-      HTTP_UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36
+      HTTP_UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/5.0 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36
     strategy:
       matrix:
         scripts:
@@ -29,16 +28,11 @@ jobs:
           - atakarejo.py
           - gbarbosa.py
 
-    # CORREÇÃO: O bloco 'steps' foi movido para a indentação correta,
-    # alinhado com 'runs-on', 'env' e 'strategy'.
     steps:
       - name: Checkout (repo atual)
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
-          fetch-tags: true
-          lfs: true
-          submodules: recursive
 
       - name: Ajustes Git no Windows (opcional)
         shell: pwsh
@@ -60,17 +54,39 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
+      - name: Garantir pasta de saída (Encartes)
+        shell: pwsh
+        run: New-Item -ItemType Directory -Force -Path "$env:OUTPUT_DIR" | Out-Null
+
+      - name: Listar arquivos (debug)
+        shell: pwsh
+        run: |
+          Write-Host "Estrutura de pastas após o checkout:"
+          Get-ChildItem -Recurse -Depth 2
+
       - name: Executar scripts da matrix
         shell: pwsh
-        working-directory: ./codes
+        # CORREÇÃO PRINCIPAL: ajustado para a sua pasta 'codes'
+        working-directory: codes 
         run: |
-          echo "OUTPUT_DIR=$env:OUTPUT_DIR"
+          echo "Diretório de saída definido para: $env:OUTPUT_DIR"
           python "${{ matrix.scripts }}"
 
-      - name: Upload arquivos gerados
+      - name: Verificar arquivos gerados (debug)
+        shell: pwsh
+        run: |
+          Write-Host "Verificando conteúdo da pasta de saída: $env:OUTPUT_DIR"
+          if (Test-Path "$env:OUTPUT_DIR") {
+            $files = Get-ChildItem "$env:OUTPUT_DIR" -Recurse -File
+            $count = ($files | Measure-Object).Count
+            Write-Host "Total de arquivos em OUTPUT_DIR: $count"
+            $files | Select-Object FullName, Length
+          }
+
+      - name: Upload arquivos gerados como Artifact
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: encartes-${{ github.run_id }}-${{ matrix.scripts }}-attempt${{ github.run_attempt }}
+          name: encartes-${{ matrix.scripts }}-${{ github.run_id }}
           if-no-files-found: warn
           path: ${{ env.OUTPUT_DIR }}/**
