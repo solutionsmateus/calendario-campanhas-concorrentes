@@ -9,9 +9,10 @@ from selenium.webdriver.support.ui import WebDriverWait, Select
 from selenium.webdriver.support import expected_conditions as EC
 from datetime import datetime
 
+# Esta configuração já estava correta para o GitHub Actions
 OUTPUT_DIR = os.environ.get("OUTPUT_DIR", str(Path.home() / "Desktop/Encartes-Extraidos-Campanhas/Assai"))
 ENCARTE_DIR = Path(OUTPUT_DIR)
-Path(ENCARTE_DIR).mkdir(parents=True, exist_ok=True) # Garante que o diretório existe
+ENCARTE_DIR.mkdir(parents=True, exist_ok=True) # Garante que o diretório existe
 
 XLSX_FILE_PATH = ENCARTE_DIR / "campanhas_assai.xlsx" 
 
