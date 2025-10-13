@@ -11,13 +11,12 @@ import pandas as pd
 from openpyxl import Workbook
 from datetime import datetime
 
-
-ENCARTE_DIR = Path.home() / "Desktop/Encartes-Extraidos-Campanhas/Atakarejo"
+# --- CONFIGURAÇÃO DE CAMINHOS PARA GITHUB ACTIONS ---
+OUTPUT_DIR = os.environ.get("OUTPUT_DIR", str(Path.home() / "Desktop/Encartes-Extraidos-Campanhas/Atakarejo"))
+ENCARTE_DIR = Path(OUTPUT_DIR)
 ENCARTE_DIR.mkdir(parents=True, exist_ok=True)
 
 XLSX_FILE_PATH = ENCARTE_DIR / "campanhas_atakarejo.xlsx" 
-
-
 
 # === CHROME HEADLESS ===
 def build_headless_chrome():
@@ -31,31 +30,11 @@ def build_headless_chrome():
     options.add_argument("--lang=pt-BR,pt")
     options.add_argument(
         "--user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
-        "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+        "AppleWebKit/5.37.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
     )
     return webdriver.Chrome(options=options)
 
-driver = build_headless_chrome()
-driver.get("https://atakarejo.com.br/cidade/vitoria-da-conquista")
-
-links = driver.find_elements(By.XPATH, '//a[contains(@class, "button-download-ofertas")]')
-print(f"{len(links)} encarte(s) encontrado(s).")
-
-def encontrar_data():
-    try: 
-        enc_data = WebDriverWait(driver, 10).until(EC.presence_of_all_elements_located((By.XPATH, '//h3[contains("TEXT")]')))
-    except:
-        return "sem_data"
-    
-    for div in enc_data:
-        texto = div.text.strip()
-        if texto:
-            nome_pasta = re.sub(r'[\\/*?:"<>|\s]', '_', texto)
-            return nome_pasta
-    return "sem_data"
-
 #Save as XLSX
-
 def save_as_xlsx(data_dict, file_path):
     try:
         df_novo = pd.DataFrame([data_dict])
@@ -66,19 +45,17 @@ def save_as_xlsx(data_dict, file_path):
             df_final = df_novo
             
         df_final.to_excel(file_path, index=False, engine='openpyxl')
-        print(f" Dados anexados/salvos em {file_path.name}")
+        print(f" Dados da campanha '{data_dict['Campanha_Titulo']}' salvos.")
     except Exception as e:
         print(f" Erro ao salvar no Excel: {e}")    
         
-        
-    
 #Procurar campanhas na Pagina HTML
-def procurar_campanhas():
+def procurar_campanhas(driver):
     try:
         cards = driver.find_elements(By.CSS_SELECTOR, "div.subitem.active")
-        print(f"Encontrados: {len(cards)}")
+        print(f"Encontrados: {len(cards)} encartes.")
         if not cards:
-            print("Nenhum card encontrado.")
+            print("Nenhum card de campanha encontrado.")
             return
 
         for i, card in enumerate(cards, 1):
@@ -87,37 +64,26 @@ def procurar_campanhas():
 
             dados = {
                 "Empresa": "Atakarejo",
-                "Campanha_Titulo": h3[0].text.strip() if len(h3) > 0 else "",
+                "Campanha_Titulo": h3[0].text.strip() if len(h3) > 0 else "Título não encontrado",
                 "Validade_Texto": (h3[1].text.strip() if len(h3) > 1
-                                   else (h4[0].text.strip() if h4 else "")),
+                                   else (h4[0].text.strip() if h4 else "Validade não encontrada")),
                 "Cidade": "Vitória da Conquista",
-                "Estado": "Bahia",
+                "Estado": "BA",
                 "Data_Coleta": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
             }
-
             save_as_xlsx(dados, XLSX_FILE_PATH)
-            print(f"[{i}] Encarte salvo salva.")
+
     except Exception as e:
         print(f"Erro ao procurar campanhas/datas: {e}")
-    
-procurar_campanhas()
-    
 
-"""for i, link in enumerate(links):
-    url_pdf = link.get_attribute("href")
-    if not url_pdf:
-        continue
-    nome = f"encarte_{i+1}.pdf"
-    caminho = ENCARTE_DIR / nome
-    try:
-        resp = requests.get(url_pdf, timeout=20)
-        if resp.status_code == 200:
-            with open(caminho, "wb") as f:
-                f.write(resp.content)
-            print(f"Baixado: {caminho.name}")
-        else:
-            print(f"Falha no download ({resp.status_code}): {url_pdf}")
-    except Exception as e:
-        print(f"Erro ao baixar {url_pdf}: {e}")"""""
-
-driver.quit()
+# --- BLOCO PRINCIPAL ---
+driver = build_headless_chrome()
+try:
+    driver.get("https://atakarejo.com.br/cidade/vitoria-da-conquista")
+    time.sleep(3) # Espera a página carregar
+    procurar_campanhas(driver)
+    print("\nProcesso finalizado.")
+except Exception as e:
+    print(f"Ocorreu um erro geral: {e}")
+finally:
+    driver.quit()
