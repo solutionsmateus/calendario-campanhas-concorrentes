@@ -13,11 +13,13 @@ from openpyxl import Workbook
 from datetime import datetime
 
 BASE_URL = "https://frangolandia.com/encartes/"
-ENCARTE_DIR = Path.home() / "Desktop/Encartes-Extraidos-Campanhas/Frangolandia"
+
+# --- CONFIGURAÇÃO DE CAMINHOS PARA GITHUB ACTIONS ---
+OUTPUT_DIR = os.environ.get("OUTPUT_DIR", str(Path.home() / "Desktop/Encartes-Extraidos-Campanhas/Frangolandia"))
+ENCARTE_DIR = Path(OUTPUT_DIR)
 ENCARTE_DIR.mkdir(parents=True, exist_ok=True)
 
 XLSX_FILE_PATH = ENCARTE_DIR / "campanhas_frangolandia.xlsx" 
-
 
 def build_headless_chrome():
     options = webdriver.ChromeOptions()
@@ -35,26 +37,9 @@ def build_headless_chrome():
     options.add_argument("--lang=pt-BR,pt")
     options.add_argument(
         "--user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
-        "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+        "AppleWebKit/5.37.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
     )
     return webdriver.Chrome(options=options)
-
-driver = build_headless_chrome()
-wait = WebDriverWait(driver, 15)
-driver.get(BASE_URL)
-
-def encontrar_data():
-    try:
-        enc_data = WebDriverWait(driver, 10).until(EC.presence_of_all_elements_located((By.XPATH, '//span[contains(@class, "elementor-button-text")]')))
-    except Exception:
-        return "sem_data"
-    
-    for div in enc_data:
-        texto = div.text.strip()
-        if texto:
-            nome_pasta = re.sub(r'[\\/*?:"<>|\s]', '_', texto)
-            return nome_pasta
-    return "sem_data"
 
 def save_as_xlsx(data_dict, file_path):
     try:
@@ -66,42 +51,43 @@ def save_as_xlsx(data_dict, file_path):
             df_final = df_novo
             
         df_final.to_excel(file_path, index=False, engine='openpyxl')
-        print(f" Dados anexados/salvos em {file_path.name}")
+        print(f" Dados da campanha '{data_dict['Campanha_Titulo']}' salvos.")
     except Exception as e:
         print(f" Erro ao salvar no Excel: {e}")   
         
-
-    
-def procurar_campanhas():
+def procurar_campanhas(driver):
     try:
-        data = driver.find_elements(By.XPATH, "//span[contains(@class, 'elementor-button-text')]")
-        campanhas = driver.find_elements(By.XPATH, "//h3[contains(@class, 'elementor-heading-title elementor-size-default')]")
+        datas = driver.find_elements(By.XPATH, "//span[contains(@class, 'elementor-button-text')]")
+        campanhas = driver.find_elements(By.XPATH, "//h3[contains(@class, 'elementor-heading-title')]")
+        
         campanhas_filtradas = [c for c in campanhas if c.text.strip() != ""]
-        num_flyers = min(len(campanhas), len(data))
+        
+        num_flyers = min(len(campanhas_filtradas), len(datas))
         print(f"Campanhas encontradas: {num_flyers}")
         
         for i in range(num_flyers):
            titulo_campanha = campanhas_filtradas[i].text.strip()
-           data_titulo = campanhas_filtradas[i].text.strip()   
+           data_titulo = datas[i].text.strip()   
            
            dados = {
                 'Empresa': 'Frangolandia',
-                'Campanha_Titulo': titulo_campanha,  # Texto limpo
-                'Validade_Texto': data_titulo,  # Texto limpo
+                'Campanha_Titulo': titulo_campanha,
+                'Validade_Texto': data_titulo,
                 'Cidade': 'Fortaleza',
                 'Estado': 'CE',
                 'Data_Coleta': datetime.now().strftime('%Y-%m-%d %H:%M:%S')
             }
-           
            save_as_xlsx(dados, XLSX_FILE_PATH)
+
     except Exception as e:
-        print(f"Não foi possivel processar as campanhas {num_flyers}")
+        print(f"Não foi possivel processar as campanhas. Erro: {e}")
                 
-        
+# --- BLOCO PRINCIPAL ---       
+driver = build_headless_chrome()
 try:
-    dados_coletados = procurar_campanhas()
-    if dados_coletados:
-        save_as_xlsx(dados_coletados, XLSX_FILE_PATH)
+    driver.get(BASE_URL)
+    wait = WebDriverWait(driver, 15)
+    procurar_campanhas(driver)
     print("\nProcesso finalizado.")
 except Exception as e:
     print(f"Erro geral: {e}")
