@@ -12,7 +12,10 @@ import pandas as pd
 from openpyxl import Workbook
 
 BASE_URL = "https://cometasupermercados.com.br/ofertas/"
-ENCARTE_DIR = Path.home() / "Desktop/Encartes-Extraidos-Campanhas/Cometa-Supermercados"
+
+# --- CONFIGURAÇÃO DE CAMINHOS PARA GITHUB ACTIONS ---
+OUTPUT_DIR = os.environ.get("OUTPUT_DIR", str(Path.home() / "Desktop/Encartes-Extraidos-Campanhas/Cometa-Supermercados"))
+ENCARTE_DIR = Path(OUTPUT_DIR)
 ENCARTE_DIR.mkdir(parents=True, exist_ok=True)
 
 XLSX_FILE_PATH = ENCARTE_DIR / "campanhas_cometa.xlsx" 
@@ -30,7 +33,7 @@ def iniciar_driver():
     options.add_argument("--lang=pt-BR,pt") 
     options.add_argument(
         "--user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
-        "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+        "AppleWebKit/5.37.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
     )
     return webdriver.Chrome(options=options)
 
@@ -50,23 +53,19 @@ def save_as_xlsx(data_dict, file_path):
         print(f" Erro ao salvar no Excel: {e}")    
         
 
-def procurador_campanhas():
+def procurador_campanhas(driver):
     try:
         driver.get(BASE_URL)
         wait = WebDriverWait(driver, 20)
         
-        # --- CORREÇÃO AQUI ---
-        # 1. O título da campanha está em um <h3> com a classe 'elementor-heading-title'
         campanhas = wait.until(EC.presence_of_all_elements_located(
             (By.XPATH, "//h3[contains(@class, 'elementor-heading-title')]")
         ))
         
-        # 2. A data está em uma <div> com a classe 'jet-listing-dynamic-field__content'
         datas = driver.find_elements(
             By.XPATH, "//div[contains(@class,'jet-listing-dynamic-field__content')]"
         )
         
-        # O site tem um texto extra que precisamos ignorar, por isso pegamos apenas os textos de data
         textos_datas = [d.text.strip() for d in datas if "Ofertas válidas" in d.text]
 
         num_flyers = min(len(campanhas), len(textos_datas))
@@ -86,10 +85,10 @@ def procurador_campanhas():
     except Exception as e:
         print(f"Não foi possível processar as campanhas: {e}")
 
-        
+# --- BLOCO PRINCIPAL ---
 driver = iniciar_driver()
 try:
-    procurador_campanhas()
+    procurador_campanhas(driver)
     print("\nProcesso finalizado.")
 finally:
     driver.quit()
