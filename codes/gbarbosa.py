@@ -11,7 +11,10 @@ import pandas as pd
 from openpyxl import Workbook
 
 BASE_URL = "https://blog.gbarbosa.com.br/ofertas/"
-ENCARTE_DIR = Path.home() / "Desktop/Encartes-Extraidos-Campanhas/G-Barbosa"
+
+# --- CONFIGURAÇÃO DE CAMINHOS PARA GITHUB ACTIONS ---
+OUTPUT_DIR = os.environ.get("OUTPUT_DIR", str(Path.home() / "Desktop/Encartes-Extraidos-Campanhas/G-Barbosa"))
+ENCARTE_DIR = Path(OUTPUT_DIR)
 ENCARTE_DIR.mkdir(parents=True, exist_ok=True)
 
 XLSX_FILE_PATH = ENCARTE_DIR / "campanhas_gbarbosa.xlsx" 
@@ -29,7 +32,7 @@ def build_headless_chrome():
     options.add_argument("--lang=pt-BR,pt")
     options.add_argument(
         "--user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
-        "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+        "AppleWebKit/5.37.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
     )
     return webdriver.Chrome(options=options)
 
@@ -47,9 +50,7 @@ def save_as_xlsx(data_dict, file_path):
     except Exception as e:
         print(f"  -> Erro ao salvar no Excel: {e}")    
         
-
-# A função continua a mesma, recebendo o estado (uf) como parâmetro
-def processar_campanhas(uf):
+def processar_campanhas(driver, wait, uf):
     print(f" Processando campanhas do estado: {uf}")
     time.sleep(2) # Espera para os cards do estado carregarem
     try:
@@ -81,6 +82,7 @@ def processar_campanhas(uf):
     except Exception as e:
         print(f" Não foi possível processar as campanhas de {uf}. Erro: {e}")
 
+# --- BLOCO PRINCIPAL ---
 driver = build_headless_chrome()
 wait = WebDriverWait(driver, 25)
 
@@ -89,21 +91,22 @@ try:
     driver.get(BASE_URL)
     wait.until(EC.presence_of_element_located((By.XPATH, "//button[@class='estado-btn']"))) # Espera os botões carregarem
     
-    print("-" * 30)
-    processar_campanhas('AL')
+    # Processa todos os estados da lista
+    UFS_PARA_PROCESSAR = ['AL', 'BA', 'CE', 'SE']
     
-    print("-" * 30)
-    try:
-        print("Mudando para o estado SE...")
-        botao_estado_se = wait.until(EC.element_to_be_clickable(
-            (By.XPATH, f"//button[@class='estado-btn' and text()='SE']")
-        ))
-        botao_estado_se.click()
-        
-        processar_campanhas('SE')
+    for uf in UFS_PARA_PROCESSAR:
+        print("-" * 30)
+        try:
+            # Clica no botão do estado (mesmo que seja o primeiro, para garantir consistência)
+            botao_estado = wait.until(EC.element_to_be_clickable(
+                (By.XPATH, f"//button[@class='estado-btn' and text()='{uf}']")
+            ))
+            botao_estado.click()
+            
+            processar_campanhas(driver, wait, uf)
 
-    except Exception as e:
-        print(f" Erro ao processar o estado SE: {e}")
+        except Exception as e:
+            print(f" Erro ao processar o estado {uf}: {e}")
 
     print("-" * 30)
     print("\nProcesso finalizado com sucesso.")
