@@ -27,8 +27,10 @@ LOJAS_ESTADOS = {
 }
 
 
-ENCARTE_DIR = Path.home() / "Desktop/Encartes-Extraidos-Campanhas/Atacadão"
-ENCARTE_DIR.mkdir(parents=True, exist_ok=True) 
+# Esta configuração já estava correta para o GitHub Actions
+OUTPUT_DIR = os.environ.get("OUTPUT_DIR", str(Path.home() / "Desktop/Encartes-Extraidos-Campanhas/Atacadão"))
+ENCARTE_DIR = Path(OUTPUT_DIR)
+ENCARTE_DIR.mkdir(parents=True, exist_ok=True) # Garante que o diretório existe
 
 XLSX_FILE_PATH = ENCARTE_DIR / "campanhas_atacadao.xlsx" 
 
@@ -48,7 +50,7 @@ def build_headless_chrome():
     options.add_argument("--window-size=1920,1080")
     options.add_argument("--lang=pt-BR,pt")
     options.add_argument("--start-maximized") 
-    user_agent = os.environ.get("HTTP_UA", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/100.0.4896.75 Safari/537.36") 
+    user_agent = os.environ.get("HTTP_UA", "Mozilla/5.0 (...)") # Usa a ENV do YAML
     options.add_argument(f"--user-agent={user_agent}")
 
     global driver, wait
