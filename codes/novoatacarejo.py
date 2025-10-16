@@ -13,10 +13,10 @@ from openpyxl import Workbook
 
 BASE_URL = "https://novoatacarejo.com/oferta/"
 
-# --- CONFIGURAÇÃO DE CAMINHOS PARA GITHUB ACTIONS ---
+# Esta configuração já estava correta para o GitHub Actions
 OUTPUT_DIR = os.environ.get("OUTPUT_DIR", str(Path.home() / "Desktop/Encartes-Extraidos-Campanhas/Novo-Atacarejo"))
 ENCARTE_DIR = Path(OUTPUT_DIR)
-ENCARTE_DIR.mkdir(parents=True, exist_ok=True)
+ENCARTE_DIR.mkdir(parents=True, exist_ok=True) # Garante que o diretório existe
 
 XLSX_FILE_PATH = ENCARTE_DIR / "campanhas_novoatacarejo.xlsx" 
 
