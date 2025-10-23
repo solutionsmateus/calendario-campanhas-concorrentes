@@ -53,19 +53,19 @@ def procurar_campanhas(driver, wait, cidade_selecionada):
     print(f"Processando campanhas para {cidade_selecionada}")
     try:
         # Espera os cards de tabloide carregarem
-        wait.until(EC.presence_of_element_located((By.XPATH, "//div[@class='card-tabloids']")))
+        wait.until(EC.presence_of_element_located((By.XPATH, "//div[@id='tabloids']/div")))
         
-        cards_tabloide = driver.find_elements(By.XPATH, "//div[@class='card-tabloids']")
+        cards_tabloide = driver.find_elements(By.XPATH, "//div[@id='tabloids']/div")
         print(f"{len(cards_tabloide)} campanhas encontradas.")
 
         for card in cards_tabloide:
             try:
-                titulo = card.find_element(By.TAG_NAME, 'h3').text.strip()
+                texto_completo = card.find_element(By.TAG_NAME, 'h6').text.strip()
                 validade = card.find_element(By.TAG_NAME, 'h6').text.strip()
                 
                 dados = {
                     'Empresa': 'Novo Atacarejo',
-                    'Campanha_Titulo': titulo,
+                    'Campanha_Titulo': texto_completo,
                     'Validade_Texto': validade,
                     'Cidade': cidade_selecionada,
                     'Estado': 'PE', # Site parece focado em PE
