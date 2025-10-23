@@ -53,9 +53,9 @@ def procurar_campanhas(driver, wait, cidade_selecionada):
     print(f"Processando campanhas para {cidade_selecionada}")
     try:
         # Espera os cards de tabloide carregarem
-        wait.until(EC.presence_of_element_located((By.XPATH, "//div[@class='card-tabloide']")))
+        wait.until(EC.presence_of_element_located((By.XPATH, "//div[@class='card-tabloids']")))
         
-        cards_tabloide = driver.find_elements(By.XPATH, "//div[@class='card-tabloide']")
+        cards_tabloide = driver.find_elements(By.XPATH, "//div[@class='card-tabloids']")
         print(f"{len(cards_tabloide)} campanhas encontradas.")
 
         for card in cards_tabloide:
