@@ -121,9 +121,8 @@ def processar_campanhas(jornal_num, estado, loja):
             'Estado': estado,
             'Loja': loja,
             'Jornal Número': jornal_num,
-            'Validade Nome': data_nome,
-            'Validade Texto': data_texto,
-            'HTML Container': html_ofertas,
+            'Validade Nome': data_nome.text.strip(),
+            'Validade Texto': data_texto.text.strip(),
             'Data Coleta': datetime.now().strftime('%Y-%m-%d %H:%M:%S')
         }
         save_as_xlsx(dados, XLSX_FILE_PATH)

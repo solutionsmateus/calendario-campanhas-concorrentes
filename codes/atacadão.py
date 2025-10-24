@@ -155,10 +155,10 @@ def processar_campanhas(uf, cidade, loja_nome):
             
             dados = {
                 'Empresa': 'Atacadão',
-                'Campanha_Titulo': campanha_titulo,  # Texto limpo
-                'Validade_Texto': data_validade,  # Texto limpo
-                'Campanha_HTML_Bruto': campanhas[i].get_attribute('outerHTML'), # Se precisar do HTML
-                'Validade_HTML_Bruto': data[i].get_attribute('outerHTML'),     # Se precisar do HTML
+                'Campanha_Titulo': campanha_titulo.text.strip(),  # Texto limpo
+                'Validade_Texto': data_validade.text.strip(),  # Texto limpo
+                'Campanha_HTML_Bruto': campanhas[i].get_attribute('outerHTML').text.strip(), # Se precisar do HTML
+                'Validade_HTML_Bruto': data[i].get_attribute('outerHTML').text.strip(),     # Se precisar do HTML
                 'Cidade': cidade,
                 'Estado': uf,
                 'Loja': loja_nome,
